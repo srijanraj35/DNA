@@ -64,7 +64,7 @@ a:hover {
 /* --- Authentication Styles --- */
 
 body.page-login {
-    overflow-y: hidden;
+    overflow-y: auto;
 }
 
 .auth-container {
@@ -455,16 +455,16 @@ body.page-login {
 
 .flashes {
     list-style: none;
-    padding: 10px;
-    margin: 15px 0;
+    padding: 5px;
+    margin: 10px 0;
     border-radius: var(--border-radius);
     font-weight: bold;
     font-family: monospace;
 }
 
 .flashes li {
-    padding: 10px;
-    margin-bottom: 5px;
+    padding: 5px 10px;
+    margin-bottom: 3px;
     border-radius: 4px;
     border: 1px solid;
     text-align:  center;
