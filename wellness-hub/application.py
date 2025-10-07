@@ -1,6 +1,6 @@
 import sqlite3
 import random
-import requests # Included for potential future Ollama/AI integration
+import requests 
 import json
 from flask import Flask, render_template, request, url_for, redirect, session, g, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -14,6 +14,9 @@ import nltk
 from nltk.corpus import stopwords
 import string
 from nltk.stem.porter import PorterStemmer
+import smtplib
+from email.message import EmailMessage
+import sys
 
 
 class backend():
@@ -112,6 +115,7 @@ class backend():
             session.clear()
             session['badge_no'] = user['badge_no']
             session['rank'] = user['rank']
+            session['sent_email'] = 0
             g.user = db.execute('SELECT  full_name, email, rank FROM users WHERE badge_no = ?', (user['badge_no'],)).fetchone()
             return redirect(url_for('dashboard'))
         
@@ -155,7 +159,6 @@ class backend():
             data = b.transform_text(data)
             v = vectorizer.transform([data])
             result = int(model.predict(v)[0]) 
-            flash(result)
 
             return result
         except FileNotFoundError:
@@ -363,7 +366,10 @@ class backend():
                 db.execute("INSERT into journal VALUES(?, ?, ?, ?)", (session['badge_no'], date, data, stress))
 
             db.commit()
-            flash('Journal entry saved!', 'success') # Moved flash here
+            if stress == 1:
+                flash("Stressed") 
+            else:
+                flash("Not stressed")
         except Exception as e:
             print(f"DATABASE ERROR during update_journal: {e}")
             db.rollback() 
@@ -371,13 +377,12 @@ class backend():
 
     def get_all_journal_entries(self):
         db = self.get_db()
-        # Fetch all journal entries for the logged-in user, ordered by date DESC
+    
         entries = db.execute(
             "SELECT date, data FROM journal WHERE badge_no = ? ORDER BY date DESC",
             (session['badge_no'],)
         ).fetchall()
         
-        # Format the data into a list of dictionaries for easier use in the template
         return [
             {'date': row['date'], 'content': row['data']} 
             for row in entries
@@ -402,6 +407,31 @@ class backend():
         else:
             db.execute("INSERT INTO wearables VALUES(?, ?, ?, ?, ?, ?, ?)", (session['badge_no'], date.today().strftime('%Y-%m-%d'), bt, bo, s, hr, stress))
         db.commit()
+        if stress == 3:
+            flash("Highly Stressed")
+        elif stress == 2:
+            flash("Moderately Stressed")
+        else:
+            flash("Not stressed")
+
+    def send_mail():
+        recipient = "fahizfaheem538@gmail.com"
+        sender = "bhushankulai2020@gmail.com"
+        app_password = "xbhd lolz oxxr kjda"
+
+        msg = EmailMessage()
+        msg["Subject"] = "High stress levels of your officer"
+        msg["From"] = sender
+        msg["To"] = recipient
+        msg.set_content(f"Your Officer {g.user['full_name']} Badge number {g.user['badge_no']} ranked as a {g.user['rank']} has been really stressed this week")
+
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+                smtp.login(sender, app_password)
+                smtp.send_message(msg)
+                print("Otp sent to", recipient)
+        except Exception as e:
+                print("failed to send OTP", e)
 
 app = Flask(__name__)
 app.secret_key = 'top_secret'
@@ -441,9 +471,6 @@ def login():
 
 @app.route('/register', methods=['POST', 'GET'])
 def register():
-
-    # if g.user:
-    #     return redirect(url_for('dashboard'))
         
     if request.method == 'POST':
         full_name = request.form['full_name']
@@ -469,9 +496,11 @@ def dashboard():
     name = g.user['full_name']
     time = date.today()
     stress_index = int(b.get_stress_index())
+    if stress_index >= 8:
+        #b.send_mail()
+        pass
     labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     weekly_data = b.get_weekly_data()
-    weekly_data = [3, 6, 7, 8]
     stress_average = b.get_stress_average()
     recommendations = b.get_recommendations()
     return render_template('dashboard.html', 
@@ -496,6 +525,12 @@ def submit_survey():
     answers = [int(a) for a in answers]
     print("Received answers:", answers)
     stress_score = (answers[0]*2) + (answers[1]*2) + (answers[2]*2) + (answers[3]*2) + (answers[4]*2)
+    if stress_score >= 8:
+        flash("Highly Stressed")
+    elif stress_score >= 6:
+        flash("Moderately Stressed")
+    else:
+        flash("Not Stressed")
     b.update_survey(answers, stress_score)
 
     return jsonify({"success": True, "message": "Survey received!"})
@@ -591,7 +626,6 @@ def submit_wearables_data():
             heart_rate = float(request.form.get('heart_rate'))
 
             b.update_wearables(body_temp, blood_oxygen, sleep, heart_rate)
-            flash("Submission Succesful")
         except:
             flash("Error")
 
