@@ -1,0 +1,379 @@
+import sqlite3
+import random
+import requests # Included for potential future Ollama/AI integration
+import json
+from flask import Flask, render_template, request, url_for, redirect, session, g, flash, jsonify
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta, date
+
+class backend():
+    def __init__(self, app):
+        self.DATABASE = 'database/userData.db'
+        self.app = app
+
+    def init_db(self):
+        with self.app.app_context():
+            db = self.get_db()
+            cursor = db.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    full_name TEXT NOT NULL,
+                    badge_no TEXT UNIQUE NOT NULL,
+                    rank TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL
+                );''')
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS final_stats (
+                    badge_no INTEGER NOT NULL,
+                    date TEXT NOT NULL,
+                    stress_level INTEGER 
+                );
+            ''')
+            cursor.execute('''CREATE TABLE IF NOT EXISTS journal(
+                        badge_no INTEGER NOT NULL,
+                        date TEXT NOT NULL,
+                        data TEXT,
+                        stress_level INTEGER
+                        );''')
+            
+            cursor.execute('''CREATE TABLE IF NOT EXISTS survey(
+                        badge_no INTEGER NOT NULL,
+                        date TEXT NOT NULL,
+                           q1 INTEGER,q2 INTEGER, q3 INTEGER, q4 INTEGER,
+                           stress_level INTEGER);
+                            ''')
+            
+            cursor.execute('''CREATE TABLE IF NOT EXISTS wearables(
+                           badge_no INTEGER NOT NULL,
+                        date TEXT NOT NULL,
+                           body_temperature DOUBLE,
+                           blood_oxygen DOUBLE, 
+                           hours_of_sleep DOUBLE,
+                           heart_rate DOUBLE, 
+                           stress_level INTEGER);''')
+            
+            cursor.execute('''CREATE TABLE IF NOT EXISTS audio(
+                              badge_no INTEGER NOT NULL,
+                        date TEXT NOT NULL,
+                        stress_level INTEGER);''')
+            db.commit()
+
+    def get_db(self):
+        db = getattr(g, '_database', None)
+        if db is None:
+            db = g._database = sqlite3.connect(self.DATABASE, timeout=10, check_same_thread=False)
+            db.row_factory = sqlite3.Row 
+        return db
+
+    def Register(self, full_name, badge_number, rank, email, password):
+        if not all([full_name, badge_number, rank, email, password]):
+            flash('All fields are required!', 'error')
+            return render_template('register.html')
+        password_hash = generate_password_hash(password)
+        db = self.get_db()
+        error = None
+
+        try:
+            db.execute(
+                "INSERT INTO users (full_name, badge_no, rank, email, password_hash) VALUES (?, ?, ?, ?, ?)",
+                (full_name, badge_number, rank, email, password_hash),
+            )
+            db.commit()
+            return True
+        except sqlite3.IntegrityError:
+            error = "User with that email or badge number already exists."
+            flash(error, 'error')
+            return render_template('register.html')
+        
+    def Login(self, email, password):
+        db = self.get_db()
+        error = None
+        
+        user = db.execute(
+            'SELECT * FROM users WHERE email = ?', (email,)
+        ).fetchone()
+
+        if user is None or not check_password_hash(user['password_hash'], password):
+            error = 'Access Denied: Incorrect credentials.'
+
+        if error is None:
+            session.clear()
+            session['badge_no'] = user['badge_no']
+            session['rank'] = user['rank']
+            g.user = db.execute('SELECT  full_name, email, rank FROM users WHERE badge_no = ?', (user['badge_no'],)).fetchone()
+            return redirect(url_for('dashboard'))
+        
+        flash(error, 'error')
+        return render_template('login.html')
+    
+    def get_stress_index(self):
+        stress_index = 0
+        d = date.today()
+        db = self.get_db()
+        temp = db.execute('''SELECT * from final_stats''').fetchone()
+        if temp:
+            return temp['stress_level']
+        
+        row = db.execute("SELECT stress_level from survey WHERE badge_no = ? and date = ?", (session['badge_no'], d)).fetchone()
+        survey_stress = row['stress_level'] if row else 0
+
+        row1 = db.execute("SELECT stress_level from journal WHERE badge_no = ? and date = ?", (session['badge_no'], d)).fetchone()
+        journal_stress = row1['stress_level'] if row1 else 0
+
+        row2 = db.execute("SELECT stress_level from wearables WHERE badge_no = ? and date = ?", (session['badge_no'], d)).fetchone()
+        wearables_stress = row2['stress_level'] if row2 else 0
+
+        row3 = db.execute("SELECT stress_level from  audio WHERE badge_no = ? and date = ?", (session['badge_no'], d)).fetchone()
+        audio_stress = row3['stress_level'] if row3 else 0
+
+        stress_index = (survey_stress/5)+(journal_stress*3)+(wearables_stress*2)+(audio_stress)
+        return stress_index
+    
+
+    def get_weekly_data(self):
+        db = self.get_db()
+        weekly_data = []
+
+        today = date.today()
+        current_day_index = today.weekday() 
+
+        monday_date = today - timedelta(days=current_day_index)
+
+        for i in range(7):
+            day_date = monday_date + timedelta(days=i)
+            row = db.execute(
+                "SELECT stress_level FROM final_stats WHERE badge_no = ? AND date = ?",
+                (session['badge_no'], day_date)
+            ).fetchone()
+            weekly_data.append(row['stress_level'] if row else 0)
+
+        return weekly_data
+
+        
+    def get_stress_average(self):
+        db = self.get_db()
+        d = date.today()
+        row = db.execute("SELECT stress_level FROM final_stats WHERE badge_no = ? AND date = ?", (session['badge_no'], d)).fetchone()
+        stress = row['stress_level'] if row else 0
+
+        if stress >= 9:
+            return "Critical"
+        elif stress >6:
+            return "Highly Stressed"
+        elif stress > 4:
+            return "Moderatley Stressed"
+        else:
+            return "Not Stressed"
+        
+    def get_recommendations(self):
+        recommendations = {
+    1: [
+        "Keep doing what you’re doing — you’re managing stress well.",
+        "Go for a short walk or stretch during breaks.",
+        "Listen to your favorite music or podcast.",
+        "Maintain a healthy sleep schedule.",
+        "Express gratitude or write one positive thought daily."
+    ],
+    2: [
+        "Stay consistent with your routines.",
+        "Do a quick mindfulness exercise after waking up.",
+        "Spend time outdoors for at least 10 minutes daily.",
+        "Enjoy a hobby or creative activity.",
+        "Stay hydrated and eat on time."
+    ],
+    3: [
+        "Take 10–15 minutes daily for deep breathing or meditation.",
+        "Limit caffeine or energy drink intake.",
+        "Try light physical activity like yoga or cycling.",
+        "Avoid multitasking — focus on one thing at a time.",
+        "Talk with friends or colleagues about your day."
+    ],
+    4: [
+        "Practice mindfulness or meditation during breaks.",
+        "Plan your day ahead to avoid last-minute stress.",
+        "Unplug from your phone for 30 minutes before bed.",
+        "Do breathing exercises when you feel tense.",
+        "Reward yourself for small accomplishments."
+    ],
+    5: [
+        "Schedule short relaxation breaks throughout your day.",
+        "Reduce social media/news exposure if it’s overwhelming.",
+        "Practice journaling — write down what’s bothering you.",
+        "Eat regular, balanced meals.",
+        "Get some good sleep"
+    ],
+    6: [
+        "Balance work and rest — don’t skip meals or breaks.",
+        "Talk to someone you trust about what’s stressing you.",
+        "Engage in a hobby that calms your mind.",
+        "Stretch or walk after long work sessions.",
+        "Get some good sleep"
+    ],
+    7: [
+        "Take a full day off or a few hours to disconnect from work.",
+        "Do grounding exercises — focus on breathing or your senses.",
+        "Seek support from a trusted person or counselor.",
+        "Do light exercise to release tension.",
+        "Get some good sleep"
+    ],
+    8: [
+        "Speak to a mental health professional if stress feels overwhelming.",
+        "Avoid negative self-talk; remind yourself this phase will pass.",
+        "Try progressive muscle relaxation or deep breathing.",
+        "Spend time in nature or a peaceful environment.",
+        "Get some good sleep"
+    ],
+    9: [
+        "Reach out for professional help immediately.",
+        "Take time away from stressful environments if possible.",
+        "Avoid making major life decisions until you feel stable.",
+        "Engage in calming activities — art, music, or prayer.",
+        "Focus on slow breathing and grounding exercises.",
+        "Get some good sleep"
+    ],
+    10: [
+        "Seek urgent professional support or counseling.",
+        "Talk to a trusted friend, family member, or helpline.",
+        "Disconnect completely from work and stressors temporarily.",
+        "Practice deep breathing or meditation multiple times daily.",
+        "Get some good sleep"
+    ]
+}
+        db = self.get_db()
+        d = date.today()
+        temp = []
+        row_stress = db.execute("SELECT stress_level FROM final_stats WHERE badge_no = ? AND date = ?", (g.user['badge_no'], d)).fetchone()
+        stress_index = row_stress['stress_level'] if row_stress else 1
+
+        row_sleep = db.execute("SELECT hours_of_sleep FROM wearables WHERE badge_no = ? AND date = ?", (g.user['badge_no'], d)).fetchone()
+        sleep = row_sleep['hours_of_sleep'] if row_sleep else 7
+
+        for i in range(1, 11):
+            if sleep < 4 and stress_index == i:
+                temp.append(recommendations[i][0])
+                temp.append(recommendations[i][4])
+                return "\n".join(temp)
+            if stress_index == i:
+                temp.append(recommendations[i][0])
+                temp.append(recommendations[i][1])
+                return "\n".join(temp)
+
+
+app = Flask(__name__)
+app.secret_key = 'top_secret'
+b = backend(app)
+b.init_db()
+
+@app.before_request
+def load_logged_in_user():
+    badge_no = session.get('badge_no')
+    if badge_no is None:
+        g.user = None
+    else:
+        db = b.get_db()
+        g.user = db.execute(
+            'SELECT full_name, email, rank, badge_no FROM users WHERE badge_no = ?',
+            (badge_no,)
+        ).fetchone()
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
+@app.route('/')
+def index():
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        return b.Login(email, password)
+        
+    return render_template('login.html')
+
+@app.route('/register', methods=['POST', 'GET'])
+def register():
+
+    # if g.user:
+    #     return redirect(url_for('dashboard'))
+        
+    if request.method == 'POST':
+        full_name = request.form['full_name']
+        badge_number = request.form['badge_number']
+        email = request.form['email']
+        password = request.form['password']
+        rank = request.form['rank']
+
+        status = b.Register(full_name, badge_number, rank, email, password)
+        
+        if status == True:
+            flash('Registration successful! Please log in.', 'success')
+            return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/dashboard', methods=['POST', 'GET'])
+def dashboard():
+    if g.user is None:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+    
+    rank = g.user['rank']
+    name = g.user['full_name']
+    time = date.today()
+    stress_index = int(b.get_stress_index())
+    labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    weekly_data = b.get_weekly_data()
+    weekly_data = [3, 6, 7, 8]
+    stress_average = b.get_stress_average()
+    recommendations = b.get_recommendations()
+    return render_template('dashboard.html', 
+                           full_name=name, 
+                           today_date=time,
+                           rank=rank, 
+                           stress_level=stress_index, 
+                           chart_labels=labels,
+                           chart_data = weekly_data,
+                           stress_average = stress_average,
+                           recommendations = recommendations,
+                           mood = stress_average)
+
+@app.route('/submit_interactive_status', methods=['POST'])
+def submit_interactive_status():  # <- This name is the endpoint
+    pass
+
+@app.route('/journal')
+def journal():
+    return render_template('journal.html')
+
+@app.route('/survey')
+def survey():
+    name = g.user['full_name']
+    time = date.today()
+    stress_index = int(b.get_stress_index())
+    return render_template('survey.html',
+                           full_name = name,
+                           today_date = time,
+                           stress_level = stress_index)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out.', 'info')
+    return render_template('login.html')
+
+@app.route('/wearables')
+def wearables():
+    return render_template('wearables.html')
+
+@app.route('/audio')
+def audio():
+    return render_template('audio.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)
