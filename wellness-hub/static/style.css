@@ -388,7 +388,7 @@ body.page-login {
     min-height: 350px; 
     display: flex;
     flex-direction: column;
-    height: 350px; 
+    height: 400px; 
     display: flex;
     flex-direction: column;
 }
