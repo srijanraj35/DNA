@@ -40,6 +40,15 @@
             </section>
 
             <section class="card checkin-module full-width">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            <ul class="flashes">
+                                {% for category, message in messages %}
+                                    <li class="{{ category }}">{{ message }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% endwith %}
                 <h2 style="margin-top: 0;"><i class="fas fa-clipboard-list neon-purple"></i> Survey</h2>
     <div class="interactive-form-container">
         <!-- Question and Answer Buttons -->
