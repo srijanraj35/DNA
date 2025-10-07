@@ -185,7 +185,7 @@ class backend():
         stress_index = 0
         d = date.today()
         db = self.get_db()
-        temp = db.execute('''SELECT * from final_stats''').fetchone()
+        temp = db.execute("SELECT * from final_stats WHERE badge_no = ? AND date = ?", (session['badge_no'], date.today())).fetchone()
         if temp:
             return temp['stress_level']
         
@@ -414,6 +414,34 @@ class backend():
         else:
             flash("Not stressed")
 
+
+
+    def update_final(self):
+        stress_index = 0
+        d = date.today()
+        db = self.get_db()
+        
+        row = db.execute("SELECT stress_level from survey WHERE badge_no = ? and date = ?", (session['badge_no'], d)).fetchone()
+        survey_stress = row['stress_level'] if row else 0
+
+        row1 = db.execute("SELECT stress_level from journal WHERE badge_no = ? and date = ?", (session['badge_no'], d)).fetchone()
+        journal_stress = row1['stress_level'] if row1 else 0
+
+        row2 = db.execute("SELECT stress_level from wearables WHERE badge_no = ? and date = ?", (session['badge_no'], d)).fetchone()
+        wearables_stress = row2['stress_level'] if row2 else 0
+
+        row3 = db.execute("SELECT stress_level from  audio WHERE badge_no = ? and date = ?", (session['badge_no'], d)).fetchone()
+        audio_stress = row3['stress_level'] if row3 else 0
+
+        stress_index = (survey_stress/5)+(journal_stress*3)+(wearables_stress+1 if wearables_stress>0 else 0)+(audio_stress)
+        existing = db.execute("SELECT * FROM final_stats WHERE badge_no = ? AND date = ?", (session['badge_no'], date.today().strftime('%Y-%m-%d'))).fetchone()
+        if existing:
+            db.execute("UPDATE final_stats SET stress_level = ? WHERE badge_no = ? AND date = ?", (stress_index, session['badge_no'], date.today().strftime('%Y-%m-%d')))
+        else:
+            db.execute("INSERT INTO final_stats VALUES(?, ?, ?)", (session['badge_no'], date.today().strftime('%Y-%m-%d'), stress_index))
+
+        db.commit()
+
     def send_mail():
         recipient = "fahizfaheem538@gmail.com"
         sender = "bhushankulai2020@gmail.com"
@@ -471,7 +499,7 @@ def login():
 
 @app.route('/register', methods=['POST', 'GET'])
 def register():
-        
+    b.update_final()
     if request.method == 'POST':
         full_name = request.form['full_name']
         badge_number = request.form['badge_number']
@@ -491,7 +519,7 @@ def dashboard():
     if g.user is None:
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
-    
+    b.update_final()
     rank = g.user['rank']
     name = g.user['full_name']
     time = date.today()
@@ -549,7 +577,7 @@ def journal():
         b.update_journal(content, current_date_str) 
         return redirect(url_for('journal'))
 
-
+    b.update_final()
     rank = g.user['rank']
     name = g.user['full_name']
     time = date.today()
@@ -578,7 +606,8 @@ def survey():
     if g.user is None:
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
-        
+    
+    b.update_final()    
     name = g.user['full_name']
     time = date.today()
     stress_index = int(b.get_stress_index())
@@ -601,6 +630,7 @@ def wearables():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
     
+    b.update_final()
     name = g.user['full_name']
     time = date.today()
     stress_index = int(b.get_stress_index())
