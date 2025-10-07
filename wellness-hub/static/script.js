@@ -1,5 +1,3 @@
-// --- GLOBAL FUNCTIONS AND LISTENERS ---
-// This part loads *after DOM* so all IDs are available safely
 document.addEventListener("DOMContentLoaded", function () {
 
   // ------------------------------
@@ -22,7 +20,6 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   window.showJournalEntry = function(title, date, content) {
-    // Unescape HTML entities (since we used |e in Jinja)
     const decodedContent = content.replace(/&quot;/g, '"')
                                   .replace(/&#39;/g, "'")
                                   .replace(/&lt;/g, '<')
@@ -34,11 +31,9 @@ document.addEventListener("DOMContentLoaded", function () {
         <p style="white-space: pre-wrap; font-size: 1em; color: var(--text-color);">${decodedContent}</p>
     `;
     
-    // Reuse the existing global showModal function
-    window.showModal(title, modalHTML);
+      window.showModal(title, modalHTML);
     };
 
-  // Close modal when clicking outside
   window.addEventListener("click", (event) => {
     if (event.target === modal) modal.style.display = "none";
   });
@@ -50,7 +45,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const emailInput = document.getElementById("email");
     const passwordInput = document.getElementById("password");
 
-    // Skip if not on register page
     if (!emailInput || !passwordInput) return true;
 
     const email = emailInput.value;
@@ -73,6 +67,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // ------------------------------
   // 3️⃣ DASHBOARD PAGE LOGIC
   // ------------------------------
+  
   if (document.body.classList.contains("page-dashboard")) {
     console.log("Dashboard logic active ✅");
 
@@ -80,7 +75,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const stressValueDisplay = document.getElementById("stress_value");
     const chartCtx = document.getElementById("stressChart");
     const checkinModule = document.querySelector(".checkin-module");
-
     const qText = document.getElementById("question-text");
     const btnYes = document.getElementById("answer-yes");
     const btnNo = document.getElementById("answer-no");
@@ -225,7 +219,7 @@ document.addEventListener("DOMContentLoaded", function () {
           labels: chartLabels,
           datasets: [
             {
-              label: "Stress Index (1=Low, 5=High)",
+              label: "Stress Index (1=Low, 10=High)",
               data: chartData,
               borderColor: "#30b0ff",
               backgroundColor: "rgba(48, 176, 255, 0.2)",
@@ -289,12 +283,11 @@ if (document.body.classList.contains("page-survey")) {
   const progressBar = document.getElementById("progress-bar");
 
   const INTERACTIVE_QUESTIONS_SURVEY = INTERACTIVE_QUESTIONS || [];
-  const submitUrl = "/submit-survey"; // <-- backend URL
+  const submitUrl = "/submit-survey";
 
   let currentQIndex = 0;
-  let answers = []; // Stores only 1 or 0
+  let answers = [];
 
-  // 🔹 Update progress bar
   function updateProgress() {
     if (progressBar) {
       const total = INTERACTIVE_QUESTIONS_SURVEY.length;
@@ -349,7 +342,7 @@ if (document.body.classList.contains("page-survey")) {
     fetch(submitUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answers: answers }), // e.g. [1,0,1,1]
+      body: JSON.stringify({ answers: answers }),
     })
       .then((res) => res.json())
       .then((data) => {
