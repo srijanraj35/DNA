@@ -234,8 +234,8 @@ document.addEventListener("DOMContentLoaded", function () {
               pointBackgroundColor: function (context) {
                 const value = context.dataset.data[context.dataIndex];
                 if (value === null) return "#444";
-                if (value >= 4) return "#ff3050";
-                if (value <= 2) return "#33ff88";
+                if (value >= 8) return "#ff3050";
+                if (value <= 5) return "#33ff88";
                 return "#ffb300";
               },
               borderWidth: 2,
