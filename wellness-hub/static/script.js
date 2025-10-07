@@ -263,11 +263,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 const INTERACTIVE_QUESTIONS = [
-  { q: "Did you feel rested after waking up?", score: 1, negative_impact: true },
-  { q: "Did you experience a high-stakes, life-threatening situation today?", score: 3, negative_impact: true },
-  { q: "Did you take at least one 15-minute uninterrupted break?", score: 2, negative_impact: false },
-  { q: "Did you lose your temper or feel constantly irritable?", score: 2, negative_impact: true },
-  { q: "Did you eat a proper, balanced meal today?", score: 1, negative_impact: false }
+  { q: "Did you sleep poorly or wake up feeling tired?", score: 1, negative_impact: true },
+  { q: "Did you face any intense or stressful situations today?", score: 3, negative_impact: true },
+  { q: "Did you skip taking any proper breaks today?", score: 2, negative_impact: true },
+  { q: "Did you lose your temper or feel easily irritated today?", score: 2, negative_impact: true },
+  { q: "Did you skip meals or eat unhealthy food today?", score: 1, negative_impact: true }
 ];
 
 
