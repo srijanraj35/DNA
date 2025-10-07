@@ -5,6 +5,12 @@ import json
 from flask import Flask, render_template, request, url_for, redirect, session, g, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, date
+import os
+import pickle
+import numpy 
+import pandas
+import sklearn
+
 
 class backend():
     def __init__(self, app):
@@ -39,8 +45,8 @@ class backend():
                         );''')
             
             cursor.execute('''CREATE TABLE IF NOT EXISTS survey(
-                        badge_no INTEGER NOT NULL,
-                        date TEXT NOT NULL,
+                            badge_no INTEGER NOT NULL,
+                            date TEXT NOT NULL,
                            q1 INTEGER,q2 INTEGER, q3 INTEGER, q4 INTEGER,
                            stress_level INTEGER);
                             ''')
@@ -107,6 +113,15 @@ class backend():
         
         flash(error, 'error')
         return render_template('login.html')
+    
+    def model1(self, data):
+        model = pickle.load(open('models\journal_based\Journal_based_model.pkl', 'rb'))
+        vectorizer = pickle.load(open('models\journal_based\Vectorizer.pkl', 'rb'))
+
+        v = vectorizer.transform([data])
+        result = model.predict(v)
+
+        return result
     
     def get_stress_index(self):
         stress_index = 0
@@ -259,6 +274,35 @@ class backend():
                 temp.append(recommendations[i][0])
                 temp.append(recommendations[i][1])
                 return "\n".join(temp)
+            
+    def get_weekly_journal(self):
+        db = self.get_db()
+        weekly_data = []
+
+        today = date.today()
+        current_day_index = today.weekday() 
+
+        monday_date = today - timedelta(days=current_day_index)
+
+        for i in range(7):
+            day_date = monday_date + timedelta(days=i)
+            row = db.execute(
+                "SELECT data FROM journal WHERE badge_no = ? AND date = ?",
+                (session['badge_no'], day_date)
+            ).fetchone()
+            weekly_data.append(row['stress_level'] if row else 0)
+
+        return weekly_data
+    
+    def update_journal(self, data, date):
+        db = self.get_db()
+        stress = self.model1(data)
+        existing = db.execute("SELECT * FROM journal WHERE badge_no = ? AND date = ?", (session['badge_no'], date)).fetchone()
+
+        if existing:
+            db.execute("UPDATE journal SET data = ? , stress_level = ? WHERE badge_no = ? AND  date = ?", (data, stress, session['badge_no'], date))
+        else:
+            db.execute("INSERT into journal VALUES(?, ?, ?, ?)", (session['badge_no'], date, data, stress))
 
 
 app = Flask(__name__)
@@ -347,9 +391,29 @@ def dashboard():
 def submit_interactive_status():  # <- This name is the endpoint
     pass
 
-@app.route('/journal')
+@app.route('/journal', methods=['GET', 'POST'])
 def journal():
-    return render_template('journal.html')
+    if request.method == 'POST':
+        content = request.form.get('content')
+        current_date = date.today()
+        b.update_journal(content, current_date)
+        flash('Journal entry saved!', 'success')
+        return redirect(url_for('journal'))
+
+    # For GET request
+    rank = g.user['rank']
+    name = g.user['full_name']
+    time = date.today()
+    stress_index = int(b.get_stress_index())
+    weekly_journal = b.get_weekly_journal()
+
+    return render_template('journal.html',
+                           full_name=name, 
+                           today_date=time,
+                           rank=rank, 
+                           stress_level=stress_index,
+                           entries=weekly_journal)
+
 
 @app.route('/survey')
 def survey():
