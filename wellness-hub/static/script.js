@@ -281,6 +281,7 @@ if (document.body.classList.contains("page-survey")) {
   const btnYes = document.getElementById("answer-yes");
   const btnNo = document.getElementById("answer-no");
   const progressBar = document.getElementById("progress-bar");
+  const answerButtonsContainer = document.querySelector('.answer-buttons');
 
   const INTERACTIVE_QUESTIONS_SURVEY = INTERACTIVE_QUESTIONS || [];
   const submitUrl = "/submit-survey";
@@ -299,8 +300,6 @@ if (document.body.classList.contains("page-survey")) {
   // 🔹 Load next question
   function loadSurveyQuestion() {
     if (!qText) return;
-
-    const answerButtonsContainer = document.querySelector('.answer-buttons');
 
     if (currentQIndex < INTERACTIVE_QUESTIONS_SURVEY.length) {
       if (answerButtonsContainer) {

@@ -842,3 +842,6 @@ body.page-journal .quick-access-card {
 100% { opacity: 1; transform: translateY(0); } 
 }
 
+.hidden {
+    display: none !important; 
+}
