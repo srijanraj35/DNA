@@ -1,0 +1,949 @@
+/* --- Global & Theme Variables (Futuristic Dark) --- */
+:root {
+    --primary-color: #00ffc4; /* Neon Cyan/Green */
+    --secondary-color: #ff0077; /* Neon Pink/Magenta */
+    --third-color: #99dbcc;
+    --dark-bg: #1a1a2e; /* Deep Blue/Black */
+    --mid-bg: #272740; /* Darker Blue */
+    --card-bg: #1c1c38;
+    --text-color: #e0e0e0; /* Light Grey/White */
+    --error-color: #ff416c; /* Neon Red */
+    --success-color: #00ff88; /* Bright Green */
+    --warning-color: #ffdb58; /* Neon Yellow */
+    --border-radius: 6px;
+    --shadow: 0 0 15px rgba(0, 255, 196, 0.2); 
+}
+
+/* HARD RESET and FONT NORMALIZATION */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Standard font fallback */
+}
+
+/* FIX: Ensure HTML and Body occupy the full viewport height only */
+html {
+    height: 100%;
+}
+
+body {
+    font-family: inherit;
+    background-color: var(--dark-bg);
+    color: var(--text-color);
+    line-height: 1.6;
+    /* CRITICAL FIX: Ensure body respects viewport boundaries */
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto; 
+    display: block; 
+}
+
+a { color: var(--primary-color); text-decoration: none; }
+a:hover { 
+    text-decoration: none;
+ }
+
+/* Glitch Effect for Titles - Keeping the glow/animation */
+.glitch-text {
+    color: var(--primary-color);
+    text-shadow: 0 0 5px var(--primary-color), 0 0 5px var(--primary-color);
+    animation: glitch-shadow 5s infinite alternate;
+}
+
+@keyframes glitch-shadow {
+    0% {text-shadow: 1px 0 5px var(--primary-color);}
+    50% {text-shadow: -1px 0 5px var(--primary-color), 1px 1px 10px var(--third-color);}
+    100% {text-shadow: 0 2px 8px var(--primary-color);}
+}
+
+/* Neon Colors */
+.neon-green { color: var(--primary-color); }
+.neon-blue { color: #87ceeb; }
+.neon-purple { color: #a980ff; }
+.neon-cyan { color: #00ffff; }
+.neon-yellow { color: var(--warning-color); }
+
+/* --- Authentication Styles --- */
+
+body.page-login {
+    overflow-y: hidden;
+}
+
+.auth-container {
+    max-width: 450px;
+    /* FIX: Standard margin for auth pages */
+    margin: 10vh auto; 
+    padding: 40px;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--primary-color);
+    box-shadow: 0 0 20px rgba(0, 255, 196, 0.3);
+    text-align: center;
+}
+
+.auth-container h2 {
+    margin-bottom: 25px;
+    color: var(--text-color);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.input-group {
+    position: relative;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 12px 12px 40px; 
+    border: 1px solid var(--mid-bg);
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    background-color: #2e2e4e;
+    color: var(--text-color);
+    transition: border-color 0.3s;
+    font-family: inherit; 
+}
+
+.input-group input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 8px var(--primary-color);
+}
+
+.input-group .icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary-color);
+}
+
+.auth-switch {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #999;
+}
+
+/* --- Button Styles --- */
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s, box-shadow 0.3s;
+    font-family: inherit; 
+    text-transform: uppercase;
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: var(--dark-bg);
+    box-shadow: 0 0 5px var(--primary-color);
+}
+
+.primary-btn:hover {
+    background-color: #00cc99;
+    box-shadow: 0 0 15px var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.logout-btn {
+    background-color: var(--error-color);
+    color: var(--dark-bg);
+    font-size: 1em;
+    box-shadow: 0 0 5px var(--error-color);
+}
+
+.logout-btn:hover {
+    background-color: #cc3355;
+    box-shadow: 0 0 15px var(--error-color);
+}
+
+
+/* --- Dashboard Layout --- */
+
+.dashboard-container {
+    padding: 30px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-bottom: 100px; 
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--primary-color);
+    box-shadow: 0 2px 10px rgba(0, 255, 196, 0.1);
+}
+
+.dashboard-header h1 {
+    font-size: 1.6em;
+}
+
+.status-time {
+    color: #999;
+    font-size: 0.9em;
+    font-family: monospace;
+}
+
+.status-indicator {
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 1.1em;
+    font-family: monospace; 
+    text-shadow: 0 0 5px currentColor;
+    border: 1px solid;
+    margin-right: 20px;
+    display: inline-block;
+}
+
+.stress-level-1, .stress-level-2 {
+    background: rgba(0, 255, 136, 0.1);
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+.stress-level-3 {
+    background: rgba(255, 219, 88, 0.1);
+    color: var(--warning-color);
+    border-color: var(--warning-color);
+}
+.stress-level-4, .stress-level-5 {
+    background: rgba(255, 65, 108, 0.1);
+    color: var(--error-color);
+    border-color: var(--error-color);
+    animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 65, 108, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0); }
+}
+
+.grid-layout {
+    display: grid;
+    grid-auto-rows: minmax(min-content, max-content); 
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+
+.card {
+    background-color: var(--card-bg);
+    padding: 25px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--mid-bg);
+    box-shadow: var(--shadow);
+    transition: all 0.5s ease;
+    /* FIX: Added relative positioning */
+    position: relative; 
+}
+
+.card:hover {
+    box-shadow: 0 0 25px rgba(0, 255, 196, 0.4);
+}
+
+.card h2 {
+    font-size: 1.2em;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+    text-shadow: 0 0 5px var(--primary-color);
+    font-family: inherit; 
+}
+
+.full-width {
+    grid-column: 1 / -1; 
+}
+
+
+/* --- Interactive Check-in Module --- */
+
+.interactive-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: fadeInSlideUp 0.8s ease-out forwards; 
+    opacity: 0;
+}
+
+.question-display {
+    background-color: #2e2e4e;
+    padding: 25px;
+    border-radius: var(--border-radius);
+    border-left: 5px solid var(--secondary-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 80px;
+}
+
+.question-text {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--text-color);
+    width: 60%;
+}
+
+.answer-buttons button {
+    margin-left: 15px;
+    font-size: 1em;
+    padding: 10px 25px;
+}
+
+.yes-btn { background-color: var(--success-color); color: var(--dark-bg); }
+.no-btn { background-color: var(--error-color); color: var(--dark-bg); }
+
+.sleep-input-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.sleep-input-group label { width: 30%; font-family: monospace;}
+.sleep-input-group input { width: 150px; padding: 10px; background: var(--mid-bg); color: var(--text-color); border: 1px solid var(--primary-color); border-radius: 4px; font-family: inherit;}
+.submit-btn { margin-left: auto; }
+
+.checkin-progress {
+    height: 10px;
+    background: #3a3a5a;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background-color: var(--primary-color);
+    transition: width 0.4s ease-in-out;
+}
+
+.checkin-module.finished {
+    background-color: #164024;
+    border-color: var(--success-color);
+    box-shadow: 0 0 15px var(--success-color);
+}
+
+/* --- AI Analysis Card --- */
+
+.analysis-content {
+    font-family: monospace;
+}
+
+.analysis-mood {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    border-bottom: 1px dotted #444;
+    padding-bottom: 5px;
+}
+
+.analysis-mood span {
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: monospace; 
+}
+
+.mood-optimized { color: var(--success-color); }
+.mood-stable { color: var(--primary-color); }
+.mood-fatigued { color: var(--warning-color); }
+.mood-strained, .mood-critical { color: var(--error-color); animation: blink 1s step-start 0s infinite; }
+
+.ai-recommendation-box {
+    background-color: #2e2e4e;
+    padding: 15px;
+    border: 1px dashed var(--secondary-color);
+    color: #fff;
+    font-size: 1.1em;
+    animation: text-reveal 0.8s forwards;
+    min-height: 80px;
+    font-family: inherit;
+}
+
+@keyframes blink {
+    50% { opacity: 0.5; }
+}
+
+@keyframes text-reveal {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Chart Card FIX --- */
+.chart-card {
+    grid-row: 2 / 2;
+    grid-column: 1 / 2;
+    padding-bottom: 90px;
+    min-height: 350px; 
+    display: flex;
+    flex-direction: column;
+    height: 350px; 
+    display: flex;
+    flex-direction: column;
+}
+
+.card {
+    /* ... other styles ... */
+    position: relative; /* Helps canvas render correctly */
+    /* ... other styles ... */
+}
+
+
+/* --- Quick Access Protocols --- */
+
+.protocol-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.protocol-btn {
+    background-color: #343a40;
+    color: var(--primary-color);
+    padding: 8px 12px;
+    border: 1px solid var(--primary-color);
+    border-radius: 4px;
+    text-align: left;
+    transition: all 0.3s;
+    font-family: inherit; 
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.protocol-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--dark-bg);
+    box-shadow: 0 0 10px var(--primary-color);
+}
+
+.helpline-info {
+    text-align: center;
+    border-top: 1px dashed #444;
+    padding-top: 15px;
+}
+
+.helpline-info p {
+    color: var(--error-color);
+    font-weight: bold;
+    animation: blink 2s infinite;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* --- Navbar --- */
+
+.Navbar-buttons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap; 
+    justify-content: flex-start; 
+    
+    /* FIX 1: Remove all width constraints */
+    max-width: 100%; /* Or just delete the line */
+    width: 100%;    /* Force the container to fill the full card width */
+    
+    gap: 0px; 
+    margin-bottom: 2px;
+}
+
+.Navbar-buttons a {
+    /* Prevent the anchor tag from stretching the space */
+    display: flex; 
+    flex-grow: 1 !important; 
+    margin: 0 !important; 
+    padding: 0 !important;
+}
+
+/* Locate and MODIFY the button block */
+.Navbar-btn {
+    width: 100%;
+    /* Ensure the button doesn't stretch */
+    flex-grow: 0 !important; 
+    flex-shrink: 0 !important; 
+    
+    /* Styles for the seamless look */
+    background-color: #272740;
+    color: var(--primary-color);
+    padding: 8px 12px; 
+    border-radius: 0px; 
+    
+    border-top: 1px solid var(--primary-color); 
+    border-bottom: 1px solid var(--primary-color);
+    border-left: 1px solid var(--primary-color);
+    border-right: none; /* Hide internal right border */
+    
+    text-align: center;
+    transition: all 0.3s;
+    font-family: inherit; 
+}
+
+/* --- ADD NEW RULES FOR EDGES --- */
+/* (Keep these identical to ensure proper edge rounding and border) */
+
+/* Target the FIRST button */
+.Navbar-buttons a:first-child .Navbar-btn {
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-left: 1px solid var(--primary-color);
+}
+
+/* Target the LAST button */
+.Navbar-buttons a:last-child .Navbar-btn {
+    border-right: 1px solid var(--primary-color) !important;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.Navbar-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--dark-bg);
+    box-shadow: 0 0 10px var(--primary-color);
+}
+
+/* --- Flash Messages --- */
+
+.flashes {
+    list-style: none;
+    padding: 10px;
+    margin: 15px 0;
+    border-radius: var(--border-radius);
+    font-weight: bold;
+    font-family: monospace;
+}
+
+.flashes li {
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    border: 1px solid;
+    text-align:  center;
+    color: var(--primary-color);
+    border: none;
+}
+
+.flashes .error {
+    background-color: rgba(255, 65, 108, 0.2);
+    color: var(--error-color);
+    border-color: var(--error-color);
+}
+
+.flashes .success {
+    background-color: rgba(0, 255, 136, 0.2);
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+/* --- Modal Styles --- */
+.modal {
+    display: none; 
+    position: fixed;
+    z-index: 10;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(26, 26, 46, 0.9); 
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    padding: 30px;
+    border: 2px solid var(--primary-color);
+    width: 80%;
+    max-width: 500px;
+    border-radius: var(--border-radius);
+    position: relative;
+    box-shadow: 0 0 30px var(--primary-color);
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(-50px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+.close-btn {
+    color: var(--error-color);
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 36px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close-btn:hover {
+    color: var(--secondary-color);
+}
+
+/* --- Responsiveness --- */
+@media (max-width: 1024px) {
+    .grid-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .chatbot-card {
+        grid-row: auto;
+        min-height: 400px; /* Adjust height for mobile */
+    }
+    
+    .chart-card {
+        height: 300px; /* Adjust chart height for mobile */
+    }
+
+    .question-display {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .answer-buttons {
+        width: 100%;
+        display: flex;
+        justify-content: space-around;
+    }
+    
+    .answer-buttons button {
+        flex-grow: 1;
+        margin: 0 5px;
+    }
+
+    .sleep-input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .sleep-input-group label, .submit-btn {
+        width: 100%;
+        margin-left: 0;
+    }
+    
+    .sleep-input-group input {
+        width: 100%;
+    }
+}
+
+
+/* Styling for Select/Dropdown Boxes */
+.auth-form select {
+    width: 100%;
+    padding: 12px 12px 12px 40px; 
+    border: 1px solid var(--mid-bg);
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    background-color: #2e2e4e;
+    color: var(--text-color);
+    appearance: none; /* Removes default browser styling for a cleaner look */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+/* Styling for the Journal Textarea and Title Input */
+
+/* Ensure text areas match the theme input boxes */
+
+
+.entry-form {
+    animation: fadeInSlideUp 0.8s ease-out forwards; 
+    opacity: 0;
+}
+
+.entry-form textarea {
+    width: 100%;
+    padding: 15px; /* Increased padding for better feel */
+    min-height: 230px; /* Gives plenty of writing space */
+    resize: vertical;
+    
+    /* Theme Styles */
+    background-color: #2e2e4e; /* Dark background */
+    color: var(--text-color); /* Light neon text color */
+    border: 1px solid var(--primary-color); /* Neon border */
+    border-radius: var(--border-radius);
+    
+    /* Remove default browser styles */
+    box-shadow: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 1em;
+}
+
+/* Also ensure the title input looks right if you have one */
+.entry-form input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    background-color: #2e2e4e;
+    color: var(--text-color);
+    border: 1px solid var(--primary-color); 
+    border-radius: var(--border-radius);
+    font-family: inherit;
+    font-size: 1em;
+}
+
+/* Add a neon focus effect for interaction */
+.entry-form textarea:focus,
+.entry-form input[type="text"]:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 8px var(--primary-color);
+}
+
+.journal-entry {
+    background-color: var(--mid-bg); 
+    padding: 10px;
+    margin-bottom: 10px;
+    border-left: 5px solid var(--secondary-color); 
+    border-radius: var(--border-radius);
+    cursor: pointer;
+}
+
+.journal-entry:hover {
+    /* FIX 2: Define a cleaner, thematic hover effect */
+    background-color: #31314f; /* Slightly lighter on hover */
+    /* Add a subtle green/cyan glow on the left border only */
+    border-left: 5px solid var(--primary-color); 
+    transform: none; /* Keep element steady */
+    box-shadow: none; /* Remove existing box shadow on hover */
+}
+
+
+/* --- Journal Layout Customization (for journal.html) --- */
+
+/* Fix the core container to use flexbox for two internal columns */
+.journal-content-wrapper {
+    display: flex;
+    gap: 20px; /* Space between the form and the history list */
+    align-items: flex-start; /* Aligns items to the top */
+}
+
+/* Style for the Left Column (Form) */
+.journal-form-column {
+    flex: 2; /* Takes up 2/3 of the space */
+    display: flex;
+    flex-direction: column;
+    opacity: 1;
+}
+
+/* Style for the Right Column (History) */
+.journal-history-column {
+    flex: 0.75; /* Takes up 1/3 of the space */
+    max-height: 37vh; 
+    overflow-y: hide;
+    padding-right: 15px; /* Space for the scrollbar */
+}
+
+/* Ensure the textarea fills the space and the history box is styled */
+.journal-form-column textarea {
+    /* CRITICAL FIX: Tell the textarea to consume the remaining height of the form column */
+    flex-grow: 1; 
+    margin-bottom: 10px;
+}
+
+/* Adjust the main card padding to be uniform */
+.journal-main-container {
+    opacity: 1;
+}
+
+/* Ensure the history entries are nicely spaced */
+.journal-entry {
+    margin-bottom: 2px;
+    padding: 15px;
+}
+
+/* Adjust default card h2 margin for the journal history title */
+.journal-history-column h2 {
+    margin-bottom: 15px !important;
+}
+
+/* --- Hiding Redundant Dashboard Elements --- */
+
+/* You must ensure the elements from the dashboard layout are hidden on the journal page */
+body.page-journal .chart-card,
+body.page-journal .ai-analysis-card,
+body.page-journal .chatbot-card,
+body.page-journal .quick-access-card {
+    display: none !important;
+}
+
+/* Styling for Firefox */
+.journal-history-column {
+    /* Set color of thumb (the moving bar) and track (the background) */
+    scrollbar-color: var(--primary-color) var(--dark-bg);
+    scrollbar-width: thin;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    
+}
+/* --- Custom Scrollbar Styles (Webkit Browsers) --- */
+
+/* 1. Set the width of the scrollbar */
+.journal-history-column::-webkit-scrollbar {
+    width: 8px;
+    height: 8px; /* For horizontal scrollbar, if present */
+}
+
+/* 2. Set the background color of the track (the channel the bar runs in) */
+.journal-history-column::-webkit-scrollbar-track {
+    background: var(--dark-bg);
+    border-radius: 10px;
+}
+
+/* 3. Set the color and style of the thumb (the moving bar) */
+.journal-history-column::-webkit-scrollbar-thumb {
+    background-color: var(--primary-color); /* Neon Cyan/Green */
+    border-radius: 10px;
+    /* Optional: Add a subtle inner border for a 3D effect */
+    border: 1px solid var(--mid-bg); 
+}
+
+/* 4. Scrollbar thumb hover state */
+.journal-history-column::-webkit-scrollbar-thumb:hover {
+    background-color: #00cc99; /* Slightly darker/more intense neon on hover */
+}
+
+
+.journal-entries-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 5%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 5%);
+    animation: fadeInSlideUp 0.8s ease-out forwards; 
+    opacity: 0;
+    will-change: opacity, transform;
+    overflow-anchor: none;
+    min-height: 0;
+}
+
+
+
+/* --- Wearables Page Custom Styles --- */
+
+.wearables-form {
+    display: flex;
+    flex-direction: column;
+    gap: 25px; /* Space between rows */
+    animation: fadeInSlideUp 0.8s ease-out forwards; 
+    opacity: 0;
+}
+
+.input-row {
+    display: flex;
+    gap: 30px; /* Space between columns in the same row */
+}
+
+.input-row .input-group {
+    flex-grow: 1; /* Makes inputs fill half the row */
+    flex-basis: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.wearables-form label {
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.wearables-form input[type="number"] {
+    /* Reuse existing input styling but ensure full width */
+    width: 100%;
+    padding: 12px;
+    background-color: #2e2e4e;
+    color: var(--text-color);
+    border: 1px solid var(--mid-bg);
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.wearables-form input[type="number"]:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 8px var(--primary-color);
+}
+
+
+
+
+/* --- Audio Upload Styles --- */
+
+.upload-form {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-top: 1px solid var(--mid-bg);
+    animation: fadeInSlideUp 0.8s ease-out forwards; 
+    opacity: 0;
+}
+
+.file-input-wrapper {
+    /* CRITICAL FIX 1: Ensure wrapper takes up most space for file input display */
+    display: flex;
+    align-items: center;
+    flex-grow: 1; /* Allow it to take up available space */
+}
+
+.file-input-group {
+    /* CRITICAL FIX 2: Enable Flexbox for the label and filename display */
+    display: flex; 
+    align-items: center;
+    gap: 15px;
+    flex-grow: 1;
+}
+
+.file-input-group input[type="file"] {
+    /* CRITICAL FIX 3: Hide the native browser input element entirely */
+    display: none; 
+}
+
+.file-label {
+    /* Styling for the visible custom button */
+    padding: 10px 15px;
+    cursor: pointer;
+    white-space: nowrap;
+    min-width: 150px;
+    text-align: center;
+    /* Ensure it behaves like a standard button */
+    display: inline-block; 
+}
+
+.file-name-display {
+    /* Styling for the filename display box */
+    color: var(--text-color);
+    font-family: monospace;
+    font-size: 0.9em;
+    padding: 8px 10px;
+    border: 1px dashed var(--secondary-color);
+    border-radius: 4px;
+    flex-grow: 1; /* Makes the filename box stretch to fill space */
+}
+
+
+/* Animation Keyframes for Fade-in Effect */
+@keyframes fadeInSlideUp { 
+0% { opacity: 0; transform: translateY(20px); } 
+100% { opacity: 1; transform: translateY(0); } 
+}
+

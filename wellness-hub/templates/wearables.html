@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sentinel Hub v2.0</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="page-survey">
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <a href="{{ url_for('dashboard') }}"><h1 class="glitch-text">&nbsp&nbsp&nbsp Welcome, {{ rank }} {{ full_name }} 👮</h1></a>
+                <p class="status-time">&nbsp&nbsp&nbsp&nbsp<i class="fas fa-clock"></i> Date {{ today_date }}</p>
+            </div>
+            <div class="header-right">
+                <div class="status-indicator {{ 'stress-level-' + stress_level|string }}">
+                    Stress Index: <span>{{ stress_level }}/10</span>
+                </div>
+                <button onclick="window.location.href='{{ url_for('logout') }}'" class="btn logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> SYSTEM LOGOUT
+                </button>&nbsp&nbsp&nbsp&nbsp&nbsp
+            </div>
+        </header>
+
+        <div class="grid-layout">
+            
+            <section class="card checkin-module full-width">
+                <div class="Navbar-buttons">
+    
+    <a href="{{ url_for('dashboard') }}"><button class="Navbar-btn">Dashboard</button></a>
+    <a href="{{ url_for('journal') }}"><button class="Navbar-btn">Journal</button></a>
+    <a href="{{ url_for('survey') }}"><button class="Navbar-btn">Survey</button></a>
+    <a href="{{ url_for('wearables') }}"><button class="Navbar-btn">Wearbales</button></a>
+    <a href="{{ url_for('audio') }}"><button class="Navbar-btn">Audio</button></a>
+    </div>
+                
+            </section>
+
+           <section class="card full-width wearables-form-card">
+                <h2><i class="fas fa-microchip neon-cyan"></i> Manual Metric Input</h2>
+                
+                <form method="POST" action="{{ url_for('submit_wearables_data') }}" class="wearables-form">
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="body_temp"><i class="fas fa-thermometer-half"></i> Body Temperature (°C)</label>
+                            <input type="number" step="0.1" id="body_temp" name="body_temp" placeholder="e.g., 36.5" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="blood_oxygen"><i class="fas fa-tint"></i> Blood Oxygen (%)</label>
+                            <input type="number" id="blood_oxygen" name="blood_oxygen" min="80" max="100" placeholder="e.g., 98" required>
+                        </div>
+                    </div>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="hours_sleep"><i class="fas fa-bed"></i> Hours of Sleep (Last 24h)</label>
+                            <input type="number" step="0.5" id="hours_sleep" name="hours_sleep" placeholder="e.g., 7.5" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="heart_rate"><i class="fas fa-heartbeat"></i> Heart Rate (BPM)</label>
+                            <input type="number" id="heart_rate" name="heart_rate" placeholder="e.g., 65" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn primary-btn submit-btn" style="margin-top: 20px;">
+                        <i class="fas fa-save"></i> Log Metrics
+                    </button>
+                </form>
+            </section>
+    </div>
+
+    <script>
+        // Data passed from Flask
+        const INTERACTIVE_QUESTIONS = [];
+        const submitUrl = "{{ url_for('submit_interactive_status') }}";
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
