@@ -118,7 +118,7 @@ class backend():
         flash(error, 'error')
         return render_template('login.html')
     
-    def transform_text(text):
+    def transform_text(self, text):
         text = text.lower()
         text = nltk.word_tokenize(text)
 
@@ -148,7 +148,6 @@ class backend():
         return " ".join(y)
 
     def model1(self, data):
-        """Predicts stress level from journal text with fallback."""
         try:
             model = pickle.load(open('models\journal_based\Journal_based_model.pkl', 'rb'))
             vectorizer = pickle.load(open('models\journal_based\Vectorizer.pkl', 'rb'))
