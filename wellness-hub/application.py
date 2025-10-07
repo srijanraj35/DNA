@@ -201,7 +201,7 @@ class backend():
         row3 = db.execute("SELECT stress_level from  audio WHERE badge_no = ? and date = ?", (session['badge_no'], d)).fetchone()
         audio_stress = row3['stress_level'] if row3 else 0
 
-        stress_index = (survey_stress/5)+(journal_stress*3)+(wearables_stress+1)+(audio_stress)
+        stress_index = (survey_stress/5)+(journal_stress*3)+(wearables_stress+1 if wearables_stress>0 else 0)+(audio_stress)
         return stress_index
     
 
@@ -394,7 +394,7 @@ class backend():
         if existing:
             db.execute("UPDATE survey SET q1=?, q2 = ?, q3 = ?, q4 = ?, q5 = ?, stress_level = ? WHERE date = ? AND badge_no = ?",(data[0], data[1], data[2], data[3], data[4], stress, date.today().strftime('%Y-%m-%d'), session['badge_no']))
         else:
-            db.execute("INSERT INTO survey VALUES(?, ?, ?, ?, ?, ?, ?, ?)",(session['badge_no'], date.today(), data[0], data[1], data[2], data[3], data[4], stress))
+            db.execute("INSERT INTO survey VALUES(?, ?, ?, ?, ?, ?, ?, ?)",(session['badge_no'], date.today().strftime('%Y-%m-%d'), data[0], data[1], data[2], data[3], data[4], stress))
         db.commit()
 
     def update_wearables(self, bt, bo, s, hr):
