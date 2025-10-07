@@ -44,7 +44,7 @@
                     
                     <div class="journal-form-column">
                         <h2 style="margin-top: 0;"><i class="fas fa-pen-fancy neon-purple"></i> Journal</h2>                        
-                        <form method="POST" class="entry-form">
+                        <form method="POST" class="entry-form" action="{{ url_for('journal') }}">
                             <div class="input-group">
                                 <textarea name="content" placeholder="Log your thoughts, feelings, or debrief here..." required>{{ today_content }}</textarea>
                             </div>
@@ -58,21 +58,21 @@
                         </h2>
                         
                         <div class="journal-entries-container">
-                            {% for entry in entries %}
-                            <div class="journal-entry entry-clickable" 
-                                 onclick="showJournalEntry(
-                                     'Log for {{ entry.date }}',  '{{ entry.date }}', 
-                                     '{{ entry.content | e }}',
-                                     '{{ entry.id }}' 
-                                 )">
-                                
-                                <p class="entry-title">{{ entry.date }}</p> 
-                            </div>
-                            {% endfor %}
-                            
-                            {% if not entries %}
-                                <p class="entry-date">No past logs available.</p>
-                            {% endif %}
+                           {% for entry in entries %}
+                        <div class="journal-entry entry-clickable"
+                            onclick="showJournalEntry(
+                                'Log for {{ entry.date }}', /* Pass the date as the title */
+                                '{{ entry.date }}',
+                                '{{ entry.content | e }}' /* Pass the content */
+                            )">
+
+                            <p class="entry-date">{{ entry.date }}</p> 
+                        </div>
+                        {% endfor %}
+
+                        {% if not entries %}
+                            <p class="entry-date">No past logs available.</p>
+                        {% endif %}
                         </div>
                     </div>
                 </div>

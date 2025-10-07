@@ -114,14 +114,23 @@ class backend():
         flash(error, 'error')
         return render_template('login.html')
     
+    # 🚨 FIX 1: Add robust error handling to model1
     def model1(self, data):
-        model = pickle.load(open('models\journal_based\Journal_based_model.pkl', 'rb'))
-        vectorizer = pickle.load(open('models\journal_based\Vectorizer.pkl', 'rb'))
+        """Predicts stress level from journal text with fallback."""
+        try:
+            model = pickle.load(open('models\\journal_based\\Journal_based_model.pkl', 'rb'))
+            vectorizer = pickle.load(open('models\\journal_based\\Vectorizer.pkl', 'rb'))
 
-        v = vectorizer.transform([data])
-        result = model.predict(v)
-
-        return result
+            v = vectorizer.transform([data])
+            # Get the first element of the prediction array and convert to integer
+            result = int(model.predict(v)[0]) 
+            return result
+        except FileNotFoundError:
+            print("WARNING: ML Model files not found. Using default stress level of 5.")
+            return 5 # Fallback stress level if model files are missing
+        except Exception as e:
+            print(f"ERROR: Model prediction failed: {e}. Using default stress level of 5.")
+            return 5 # Fallback for other prediction errors
     
     def get_stress_index(self):
         stress_index = 0
@@ -256,6 +265,7 @@ class backend():
         "Get some good sleep"
     ]
 }
+
         db = self.get_db()
         d = date.today()
         temp = []
@@ -294,18 +304,41 @@ class backend():
 
         return weekly_data
     
+    # 🚨 FIX 2: Added error handling and removed unnecessary array access from model1 result
     def update_journal(self, data, date):
         db = self.get_db()
-        stress = int(self.model1(data)[0])
-        existing = db.execute("SELECT * FROM journal WHERE badge_no = ? AND date = ?", (session['badge_no'], date)).fetchone()
+        # stress now gets a clean integer from model1 (with fallback)
+        stress = self.model1(data) 
 
-        if existing:
-            db.execute("UPDATE journal SET data = ? , stress_level = ? WHERE badge_no = ? AND  date = ?", (data, stress, session['badge_no'], date))
-        else:
-            db.execute("INSERT into journal VALUES(?, ?, ?, ?)", (session['badge_no'], date, data, stress))
+        try:
+            # The date passed here is already the standardized string ('%Y-%m-%d')
+            existing = db.execute("SELECT * FROM journal WHERE badge_no = ? AND date = ?", (session['badge_no'], date)).fetchone() 
+        
+            if existing:
+                db.execute("UPDATE journal SET data = ? , stress_level = ? WHERE badge_no = ? AND  date = ?", (data, stress, session['badge_no'], date))
+            else:
+                db.execute("INSERT into journal VALUES(?, ?, ?, ?)", (session['badge_no'], date, data, stress))
 
-        db.commit()
+            db.commit()
+            flash('Journal entry saved!', 'success') # Moved flash here
+        except Exception as e:
+            print(f"DATABASE ERROR during update_journal: {e}")
+            db.rollback() 
+            flash('SYSTEM ERROR: Could not save journal entry. Database failure.', 'error')
 
+    def get_all_journal_entries(self):
+        db = self.get_db()
+        # Fetch all journal entries for the logged-in user, ordered by date DESC
+        entries = db.execute(
+            "SELECT date, data FROM journal WHERE badge_no = ? ORDER BY date DESC",
+            (session['badge_no'],)
+        ).fetchall()
+        
+        # Format the data into a list of dictionaries for easier use in the template
+        return [
+            {'date': row['date'], 'content': row['data']} 
+            for row in entries
+        ]
 
 app = Flask(__name__)
 app.secret_key = 'top_secret'
@@ -395,41 +428,57 @@ def submit_interactive_status():  # <- This name is the endpoint
 
 @app.route('/journal', methods=['GET', 'POST'])
 def journal():
+    if g.user is None:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+
+    # Standardize the current date string format for all DB operations
+    current_date_str = date.today().strftime('%Y-%m-%d')
+    
     if request.method == 'POST':
         content = request.form.get('content')
-        current_date = date.today()
-        b.update_journal(content, current_date)
+        # Pass the standardized date string
+        b.update_journal(content, current_date_str) 
+        # Redirect will trigger the GET request below to refresh the page
         return redirect(url_for('journal'))
 
-    # For GET request
+    # For GET request (Page Load)
     rank = g.user['rank']
     name = g.user['full_name']
     time = date.today()
     stress_index = int(b.get_stress_index())
-    entries = b.get_weekly_journal()
+    
+    # 🚨 FIX 3: Use the correct function to get ALL structured journal entries.
+    # This list is already correctly formatted for the template.
+    entries = b.get_all_journal_entries() 
 
-    formatted_entries = []
-    d = 0
-    for i, entry in enumerate(entries):
-        date_obj = date.today() - timedelta(days=d)
-        formatted_entries.append({
-            'content': entry,
-            'date': date_obj,
-            'id': i  
-        })
-        d += 1
-
+    # 🚨 FIX 4: Retrieve today's content for pre-filling the textarea.
+    today_content_row = b.get_db().execute(
+        "SELECT data FROM journal WHERE badge_no = ? AND date = ?",
+        (g.user['badge_no'], current_date_str) 
+    ).fetchone()
+    today_content = today_content_row['data'] if today_content_row else ''
+    
+    # 🚨 FIX 5: Remove the manual, buggy date formatting loop from the GET request.
+    # The 'entries' variable now contains the correct data.
 
     return render_template('journal.html',
                            full_name=name, 
                            today_date=time,
                            rank=rank, 
                            stress_level=stress_index,
-                           entries=formatted_entries)
+                           # Pass the correct, full history list
+                           entries=entries,
+                           # Pass today's content for the main text area
+                           today_content=today_content)
 
 
 @app.route('/survey')
 def survey():
+    if g.user is None:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+        
     name = g.user['full_name']
     time = date.today()
     stress_index = int(b.get_stress_index())
@@ -446,10 +495,18 @@ def logout():
 
 @app.route('/wearables')
 def wearables():
+    if g.user is None:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+        
     return render_template('wearables.html')
 
 @app.route('/audio')
 def audio():
+    if g.user is None:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+        
     return render_template('audio.html')
 
 if __name__ == '__main__':
