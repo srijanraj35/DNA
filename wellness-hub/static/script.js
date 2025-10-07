@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", function () {
           scales: {
             y: {
               min: 1,
-              max: 5,
+              max: 10,
               ticks: { stepSize: 1, color: "#e0e0e0" },
               grid: { color: "#404060", borderColor: "#e0e0e0" },
             },
