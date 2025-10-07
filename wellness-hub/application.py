@@ -287,22 +287,24 @@ class backend():
         for i in range(7):
             day_date = monday_date + timedelta(days=i)
             row = db.execute(
-                "SELECT data FROM journal WHERE badge_no = ? AND date = ?",
+                "SELECT * FROM journal WHERE badge_no = ? AND date = ?",
                 (session['badge_no'], day_date)
             ).fetchone()
-            weekly_data.append(row['stress_level'] if row else 0)
+            weekly_data.append(row['data'] if row else "")
 
         return weekly_data
     
     def update_journal(self, data, date):
         db = self.get_db()
-        stress = self.model1(data)
+        stress = int(self.model1(data)[0])
         existing = db.execute("SELECT * FROM journal WHERE badge_no = ? AND date = ?", (session['badge_no'], date)).fetchone()
 
         if existing:
             db.execute("UPDATE journal SET data = ? , stress_level = ? WHERE badge_no = ? AND  date = ?", (data, stress, session['badge_no'], date))
         else:
             db.execute("INSERT into journal VALUES(?, ?, ?, ?)", (session['badge_no'], date, data, stress))
+
+        db.commit()
 
 
 app = Flask(__name__)
@@ -397,7 +399,6 @@ def journal():
         content = request.form.get('content')
         current_date = date.today()
         b.update_journal(content, current_date)
-        flash('Journal entry saved!', 'success')
         return redirect(url_for('journal'))
 
     # For GET request
@@ -405,14 +406,26 @@ def journal():
     name = g.user['full_name']
     time = date.today()
     stress_index = int(b.get_stress_index())
-    weekly_journal = b.get_weekly_journal()
+    entries = b.get_weekly_journal()
+
+    formatted_entries = []
+    d = 0
+    for i, entry in enumerate(entries):
+        date_obj = date.today() - timedelta(days=d)
+        formatted_entries.append({
+            'content': entry,
+            'date': date_obj,
+            'id': i  
+        })
+        d += 1
+
 
     return render_template('journal.html',
                            full_name=name, 
                            today_date=time,
                            rank=rank, 
                            stress_level=stress_index,
-                           entries=weekly_journal)
+                           entries=formatted_entries)
 
 
 @app.route('/survey')
