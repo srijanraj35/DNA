@@ -499,7 +499,6 @@ def login():
 
 @app.route('/register', methods=['POST', 'GET'])
 def register():
-    b.update_final()
     if request.method == 'POST':
         full_name = request.form['full_name']
         badge_number = request.form['badge_number']
