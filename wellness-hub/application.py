@@ -10,6 +10,10 @@ import pickle
 import numpy 
 import pandas
 import sklearn
+import nltk
+from nltk.corpus import stopwords
+import string
+from nltk.stem.porter import PorterStemmer
 
 
 class backend():
@@ -47,13 +51,13 @@ class backend():
             cursor.execute('''CREATE TABLE IF NOT EXISTS survey(
                             badge_no INTEGER NOT NULL,
                             date TEXT NOT NULL,
-                           q1 INTEGER,q2 INTEGER, q3 INTEGER, q4 INTEGER,
+                           q1 INTEGER,q2 INTEGER, q3 INTEGER, q4 INTEGER, q5 INTEGER,
                            stress_level INTEGER);
                             ''')
             
             cursor.execute('''CREATE TABLE IF NOT EXISTS wearables(
                            badge_no INTEGER NOT NULL,
-                        date TEXT NOT NULL,
+                            date TEXT NOT NULL,
                            body_temperature DOUBLE,
                            blood_oxygen DOUBLE, 
                            hours_of_sleep DOUBLE,
@@ -114,23 +118,66 @@ class backend():
         flash(error, 'error')
         return render_template('login.html')
     
-    # 🚨 FIX 1: Add robust error handling to model1
+    def transform_text(text):
+        text = text.lower()
+        text = nltk.word_tokenize(text)
+
+        y = []
+        for i in text:
+            if i.isalnum():
+                y.append(i)
+
+        text = y[:]
+        y.clear()
+
+        for i in text:
+            if i not in stopwords.words('english') and i not in string.punctuation:
+                y.append(i)
+                
+        text = y[:]
+        y.clear()
+        
+        ps = PorterStemmer()
+        for i in text:
+            try:
+                t = ps.stem(i) 
+                y.append(t)
+            except:
+                y.append(i)
+        
+        return " ".join(y)
+
     def model1(self, data):
         """Predicts stress level from journal text with fallback."""
         try:
-            model = pickle.load(open('models\\journal_based\\Journal_based_model.pkl', 'rb'))
-            vectorizer = pickle.load(open('models\\journal_based\\Vectorizer.pkl', 'rb'))
+            model = pickle.load(open('models\journal_based\Journal_based_model.pkl', 'rb'))
+            vectorizer = pickle.load(open('models\journal_based\Vectorizer.pkl', 'rb'))
 
+            data = b.transform_text(data)
             v = vectorizer.transform([data])
-            # Get the first element of the prediction array and convert to integer
             result = int(model.predict(v)[0]) 
+            flash(result)
+
             return result
         except FileNotFoundError:
             print("WARNING: ML Model files not found. Using default stress level of 5.")
-            return 5 # Fallback stress level if model files are missing
+            return 0
         except Exception as e:
             print(f"ERROR: Model prediction failed: {e}. Using default stress level of 5.")
-            return 5 # Fallback for other prediction errors
+            return 0
+        
+        
+    def model2(self, bt, bo, s, hr):
+        scaler = pickle.load(open('models\wearables_based\scaler.pkl', 'rb'))
+        model = pickle.load(open('models\wearables_based\wearable_based_model.pkl', 'rb'))
+
+        x = [bt, bo, s, hr]
+
+        v = scaler.transform([x])
+        result = model.predict(v)
+
+        return result
+
     
     def get_stress_index(self):
         stress_index = 0
@@ -152,7 +199,7 @@ class backend():
         row3 = db.execute("SELECT stress_level from  audio WHERE badge_no = ? and date = ?", (session['badge_no'], d)).fetchone()
         audio_stress = row3['stress_level'] if row3 else 0
 
-        stress_index = (survey_stress/5)+(journal_stress*3)+(wearables_stress*2)+(audio_stress)
+        stress_index = (survey_stress/5)+(journal_stress*3)+(wearables_stress+1)+(audio_stress)
         return stress_index
     
 
@@ -304,14 +351,11 @@ class backend():
 
         return weekly_data
     
-    # 🚨 FIX 2: Added error handling and removed unnecessary array access from model1 result
     def update_journal(self, data, date):
         db = self.get_db()
-        # stress now gets a clean integer from model1 (with fallback)
         stress = self.model1(data) 
 
         try:
-            # The date passed here is already the standardized string ('%Y-%m-%d')
             existing = db.execute("SELECT * FROM journal WHERE badge_no = ? AND date = ?", (session['badge_no'], date)).fetchone() 
         
             if existing:
@@ -339,6 +383,26 @@ class backend():
             {'date': row['date'], 'content': row['data']} 
             for row in entries
         ]
+    
+    def update_survey(self, data, stress):
+        db = self.get_db()
+        existing = db.execute("SELECT * FROM survey WHERE badge_no = ? and date = ?",(session['badge_no'], date.today().strftime('%Y-%m-%d'))).fetchone()
+        if existing:
+            db.execute("UPDATE survey SET q1=?, q2 = ?, q3 = ?, q4 = ?, q5 = ?, stress_level = ? WHERE date = ? AND badge_no = ?",(data[0], data[1], data[2], data[3], data[4], stress, date.today().strftime('%Y-%m-%d'), session['badge_no']))
+        else:
+            db.execute("INSERT INTO survey VALUES(?, ?, ?, ?, ?, ?, ?, ?)",(session['badge_no'], date.today(), data[0], data[1], data[2], data[3], data[4], stress))
+        db.commit()
+
+    def update_wearables(self, bt, bo, s, hr):
+        db = self.get_db()
+        stress = self.model2(bt, bo, s, hr)
+        stress = int(stress)
+        existing = db.execute("SELECT * FROM wearables WHERE badge_no = ? AND date = ?", (session['badge_no'], date.today().strftime('%Y-%m-%d'))).fetchone()
+        if existing:
+            db.execute("UPDATE wearables SET body_temperature = ? , blood_oxygen = ?, hours_of_sleep = ?, heart_rate = ?, stress_level = ? WHERE badge_no = ? AND date = ?", (bt, bo, s, hr, stress, session['badge_no'], date.today().strftime('%Y-%m-%d')))
+        else:
+            db.execute("INSERT INTO wearables VALUES(?, ?, ?, ?, ?, ?, ?)", (session['badge_no'], date.today().strftime('%Y-%m-%d'), bt, bo, s, hr, stress))
+        db.commit()
 
 app = Flask(__name__)
 app.secret_key = 'top_secret'
@@ -423,8 +487,20 @@ def dashboard():
                            mood = stress_average)
 
 @app.route('/submit_interactive_status', methods=['POST'])
-def submit_interactive_status():  # <- This name is the endpoint
+def submit_interactive_status():  
     pass
+
+@app.route('/submit-survey', methods=['POST'])
+def submit_survey():
+    data = request.get_json()
+    answers = data.get('answers', [])
+    answers = [int(a) for a in answers]
+    print("Received answers:", answers)
+    stress_score = (answers[0]*2) + (answers[1]*2) + (answers[2]*2) + (answers[3]*2) + (answers[4]*2)
+    b.update_survey(answers, stress_score)
+
+    return jsonify({"success": True, "message": "Survey received!"})
+
 
 @app.route('/journal', methods=['GET', 'POST'])
 def journal():
@@ -432,44 +508,34 @@ def journal():
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
 
-    # Standardize the current date string format for all DB operations
     current_date_str = date.today().strftime('%Y-%m-%d')
     
     if request.method == 'POST':
         content = request.form.get('content')
-        # Pass the standardized date string
         b.update_journal(content, current_date_str) 
-        # Redirect will trigger the GET request below to refresh the page
         return redirect(url_for('journal'))
 
-    # For GET request (Page Load)
+
     rank = g.user['rank']
     name = g.user['full_name']
     time = date.today()
     stress_index = int(b.get_stress_index())
     
-    # 🚨 FIX 3: Use the correct function to get ALL structured journal entries.
-    # This list is already correctly formatted for the template.
     entries = b.get_all_journal_entries() 
 
-    # 🚨 FIX 4: Retrieve today's content for pre-filling the textarea.
     today_content_row = b.get_db().execute(
         "SELECT data FROM journal WHERE badge_no = ? AND date = ?",
         (g.user['badge_no'], current_date_str) 
     ).fetchone()
     today_content = today_content_row['data'] if today_content_row else ''
     
-    # 🚨 FIX 5: Remove the manual, buggy date formatting loop from the GET request.
-    # The 'entries' variable now contains the correct data.
 
     return render_template('journal.html',
                            full_name=name, 
                            today_date=time,
                            rank=rank, 
                            stress_level=stress_index,
-                           # Pass the correct, full history list
                            entries=entries,
-                           # Pass today's content for the main text area
                            today_content=today_content)
 
 
@@ -482,10 +548,12 @@ def survey():
     name = g.user['full_name']
     time = date.today()
     stress_index = int(b.get_stress_index())
+    rank = g.user['rank']
     return render_template('survey.html',
                            full_name = name,
                            today_date = time,
-                           stress_level = stress_index)
+                           stress_level = stress_index,
+                           rank = rank)
 
 @app.route('/logout')
 def logout():
@@ -498,16 +566,57 @@ def wearables():
     if g.user is None:
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
+    
+    name = g.user['full_name']
+    time = date.today()
+    stress_index = int(b.get_stress_index())
+    rank = g.user['rank']
         
-    return render_template('wearables.html')
+    return render_template('wearables.html', 
+                           full_name = name,
+                           today_date = time,
+                           stress_level = stress_index,
+                           rank = rank)
+
+@app.route('/submit_wearables_data', methods=['POST'])
+def submit_wearables_data():
+    name = g.user['full_name']
+    time = date.today()
+    stress_index = int(b.get_stress_index())
+    rank = g.user['rank']
+    if request.method == 'POST':
+        try:
+            body_temp = float(request.form.get('body_temp'))
+            blood_oxygen = float(request.form.get('blood_oxygen'))
+            sleep = float(request.form.get('hours_sleep'))
+            heart_rate = float(request.form.get('heart_rate'))
+
+            b.update_wearables(body_temp, blood_oxygen, sleep, heart_rate)
+            flash("Submission Succesful")
+        except:
+            flash("Error")
+
+    return render_template('wearables.html', full_name = name,
+                           today_date = time,
+                           stress_level = stress_index,
+                           rank = rank)
 
 @app.route('/audio')
 def audio():
     if g.user is None:
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
+    
+    name = g.user['full_name']
+    time = date.today()
+    stress_index = int(b.get_stress_index())
+    rank = g.user['rank']
         
-    return render_template('audio.html')
+    return render_template('audio.html',full_name = name,
+                           today_date = time,
+                           stress_level = stress_index,
+                           rank = rank
+                           )
 
 if __name__ == '__main__':
     app.run(debug=True)
