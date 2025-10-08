@@ -17,7 +17,8 @@ from nltk.stem.porter import PorterStemmer
 import smtplib
 from email.message import EmailMessage
 import sys
-
+from werkzeug.utils import secure_filename
+import librosa
 
 class backend():
     def __init__(self, app):
@@ -180,7 +181,17 @@ class backend():
 
         return result
 
-    
+    def model3(self, file_path, n_mfcc=40):
+        model = pickle.load(open('models/audio_based/model.pkl', 'rb'))
+        y, sr = librosa.load(file_path, sr=16000)
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+        mfcc =  mfcc.T
+
+        stress = model.predict(mfcc)
+
+        flash(stress)
+        return stress
+
     def get_stress_index(self):
         stress_index = 0
         d = date.today()
@@ -414,7 +425,14 @@ class backend():
         else:
             flash("Not stressed")
 
-
+    def update_audio(self, file_path, n_mfcc=40):
+        db = self.get_db()
+        stress = self.model3(file_path)
+        existing = db.execute("SELECT * FROM audio WHERE badge_no = ? AND date = ?", (session['badge_no'], date.today().strftime('%Y-%m-%d'))).fetchone()
+        if existing:
+            db.execute("UPDATE audio SET stress_level = ? WHERE badge_no = ? AND date = ?", (stress, session['badge_no'], date.today().strftime('%Y-%m-%d')))  
+        else:
+            db.execute("INSERT INTO audio VALUES(?, ?, ?)", (session['badge_no'], date.today().strftime('%Y-%m-%d'), stress))     
 
     def update_final(self):
         stress_index = 0
@@ -499,7 +517,6 @@ def login():
 
 @app.route('/register', methods=['POST', 'GET'])
 def register():
-    b.update_final()
     if request.method == 'POST':
         full_name = request.form['full_name']
         badge_number = request.form['badge_number']
@@ -525,8 +542,8 @@ def dashboard():
     time = date.today()
     stress_index = int(b.get_stress_index())
     if stress_index >= 8:
-        #b.send_mail()
-        pass
+        b.send_mail()
+    
     labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     weekly_data = b.get_weekly_data()
     stress_average = b.get_stress_average()
@@ -664,11 +681,50 @@ def submit_wearables_data():
                            stress_level = stress_index,
                            rank = rank)
 
-@app.route('/audio')
+UPLOAD_FOLDER = 'static/audios'
+ALLOWED_EXTENSIONS = {'mp3', 'wav'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    """Checks if the uploaded file has an allowed extension."""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/audio', methods=['POST', 'GET'])
 def audio():
     if g.user is None:
         flash('Please log in first.', 'warning')
         return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        if 'audio' not in request.files:
+            flash('No file part in the request.', 'error')
+            return redirect(url_for('audio'))
+        
+        file = request.files['audio']
+        
+        if file.filename == '':
+            flash('No selected file.', 'error')
+            return redirect(url_for('audio'))
+        
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            
+            print(f"\n✅ FILE SAVED. SERVER PATH: {file_path}\n")
+            
+            b.update_audio(file)
+            
+            flash(f'File "{filename}" uploaded successfully.', 'success')
+        else:
+            flash('Invalid file type. Only MP3 and WAV are allowed.', 'error')
+            
+        return redirect(url_for('audio'))
+
+    audios = os.listdir(app.config['UPLOAD_FOLDER'])
     
     name = g.user['full_name']
     time = date.today()
