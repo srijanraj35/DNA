@@ -246,12 +246,12 @@ document.addEventListener("DOMContentLoaded", function () {
             y: {
               min: 1,
               max: 10,
-              ticks: { stepSize: 1, color: "#e0e0e0" },
-              grid: { color: "#404060", borderColor: "#e0e0e0" },
+              ticks: { stepSize: 1, color: "#000000ff" },
+              grid: { color: "#404060", borderColor: "#000000ff" },
             },
             x: {
-              ticks: { color: "#e0e0e0", padding: 10 },
-              grid: { display: false, borderColor: "#e0e0e0" },
+              ticks: { color: "#000000ff", padding: 10 },
+              grid: { display: false, borderColor: "#000000ff" },
             },
           },
           plugins: { legend: { display: false }, title: { display: false } },
